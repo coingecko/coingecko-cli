@@ -77,6 +77,9 @@ var commandMeta = map[string]commandAnnotation{
 		PaidOnly:     true,
 		RequiresAuth: true,
 	},
+	"token-safety": {
+		APIEndpoint: "https://api.geckoterminal.com/api/v2/networks/{network}/tokens/{address}",
+	},
 }
 
 type flagInfo struct {
