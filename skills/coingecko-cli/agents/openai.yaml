@@ -1,0 +1,6 @@
+interface:
+  display_name: "CoinGecko CLI"
+  short_description: "Use cg for crypto market data"
+  default_prompt: "Use $coingecko-cli to fetch current crypto market data with the cg CLI."
+policy:
+  allow_implicit_invocation: true
