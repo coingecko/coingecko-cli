@@ -28,6 +28,12 @@ var commandMeta = map[string]commandAnnotation{
 		OASSpec:        "coingecko-demo.json",
 		RequiresAuth:   true,
 	},
+	"token-price": {
+		APIEndpoint:    "/simple/token_price/{platform}",
+		OASOperationID: "simple-token-price",
+		OASSpec:        "coingecko-demo.json",
+		RequiresAuth:   true,
+	},
 	"markets": {
 		APIEndpoint:    "/coins/markets",
 		OASOperationID: "coins-markets",

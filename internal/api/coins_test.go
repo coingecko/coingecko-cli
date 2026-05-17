@@ -53,6 +53,62 @@ func TestSimplePrice(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// SimpleTokenPrice
+// ---------------------------------------------------------------------------
+
+func TestSimpleTokenPrice(t *testing.T) {
+	c, srv := testClient(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/simple/token_price/ethereum", r.URL.Path)
+		q := r.URL.Query()
+		assert.Equal(t, "0x1f9840a85d5af5bf1d1762f925bdaddc4201f984", q.Get("contract_addresses"))
+		assert.Equal(t, "usd", q.Get("vs_currencies"))
+		assert.Equal(t, "true", q.Get("include_24hr_change"))
+
+		w.WriteHeader(200)
+		_, _ = w.Write([]byte(`{
+			"0x1f9840a85d5af5bf1d1762f925bdaddc4201f984": {"usd": 7.42, "usd_24h_change": -1.3}
+		}`))
+	})
+	defer srv.Close()
+
+	result, err := c.SimpleTokenPrice(context.Background(), "ethereum", []string{"0x1f9840a85d5af5bf1d1762f925bdaddc4201f984"}, "usd")
+	require.NoError(t, err)
+	assert.Equal(t, 7.42, result["0x1f9840a85d5af5bf1d1762f925bdaddc4201f984"]["usd"])
+	assert.Equal(t, -1.3, result["0x1f9840a85d5af5bf1d1762f925bdaddc4201f984"]["usd_24h_change"])
+}
+
+func TestSimpleTokenPrice_MultipleAddresses(t *testing.T) {
+	c, srv := testClient(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/simple/token_price/ethereum", r.URL.Path)
+		assert.Contains(t, r.URL.Query().Get("contract_addresses"), ",")
+
+		w.WriteHeader(200)
+		_, _ = w.Write([]byte(`{
+			"0xaaa": {"usd": 1.0},
+			"0xbbb": {"usd": 2.0}
+		}`))
+	})
+	defer srv.Close()
+
+	result, err := c.SimpleTokenPrice(context.Background(), "ethereum", []string{"0xaaa", "0xbbb"}, "usd")
+	require.NoError(t, err)
+	assert.Len(t, result, 2)
+	assert.Equal(t, 1.0, result["0xaaa"]["usd"])
+	assert.Equal(t, 2.0, result["0xbbb"]["usd"])
+}
+
+func TestSimpleTokenPrice_PlatformEscaping(t *testing.T) {
+	c, srv := testClient(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/simple/token_price/arbitrum-one", r.URL.Path)
+		_, _ = w.Write([]byte(`{}`))
+	})
+	defer srv.Close()
+
+	_, err := c.SimpleTokenPrice(context.Background(), "arbitrum-one", []string{"0xaaa"}, "usd")
+	require.NoError(t, err)
+}
+
+// ---------------------------------------------------------------------------
 // CoinMarkets
 // ---------------------------------------------------------------------------
 
