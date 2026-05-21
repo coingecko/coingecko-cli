@@ -101,6 +101,22 @@ func newTestServer(handler http.HandlerFunc) *httptest.Server {
 	return httptest.NewServer(handler)
 }
 
+// captureStdout runs fn and returns everything it wrote to os.Stdout.
+func captureStdout(t *testing.T, fn func()) string {
+	t.Helper()
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	fn()
+
+	_ = w.Close()
+	os.Stdout = oldStdout
+	var buf bytes.Buffer
+	_, _ = io.Copy(&buf, r)
+	return buf.String()
+}
+
 // resetAllFlags resets all flags on a command and its children to their default values.
 func resetAllFlags(cmd *cobra.Command) {
 	cmd.Flags().VisitAll(func(f *pflag.Flag) {

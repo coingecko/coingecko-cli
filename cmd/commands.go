@@ -16,9 +16,9 @@ type commandAnnotation struct {
 	OASOperationID  string
 	OASOperationIDs map[string]string
 	OASSpec         string
-	Transport       string // "rest" (default) or "websocket"
-	PaidOnly        bool
-	RequiresAuth    bool
+	Transport string // "rest" (default) or "websocket"
+	PaidOnly     bool
+	RequiresAuth bool
 }
 
 var commandMeta = map[string]commandAnnotation{
@@ -77,6 +77,20 @@ var commandMeta = map[string]commandAnnotation{
 		PaidOnly:     true,
 		RequiresAuth: true,
 	},
+	"contract": {
+		APIEndpoints: map[string]string{
+			"default":   "/simple/token_price/{platform}",
+			"--onchain": "/onchain/simple/networks/{network}/token_price/{addresses}",
+			"resolve":   "/onchain/search/pools + /onchain/networks",
+		},
+		OASOperationIDs: map[string]string{
+			"default":   "simple-token-price",
+			"--onchain": "onchain-simple-price",
+			"resolve":   "search-pools",
+		},
+		OASSpec:      "coingecko-demo.json",
+		RequiresAuth: true,
+	},
 }
 
 type flagInfo struct {
@@ -133,12 +147,13 @@ type commandInfo struct {
 	Examples        []string          `json:"examples,omitempty"`
 	OutputFormats   []string          `json:"output_formats"`
 	RequiresAuth    bool              `json:"requires_auth"`
-	PaidOnly        bool              `json:"paid_only"`
+	PaidOnly bool `json:"paid_only"`
 	Transport       string            `json:"transport,omitempty"`
 	APIEndpoint     string            `json:"api_endpoint,omitempty"`
 	APIEndpoints    map[string]string `json:"api_endpoints,omitempty"`
 	OASOperationID  string            `json:"oas_operation_id,omitempty"`
 	OASOperationIDs map[string]string `json:"oas_operation_ids,omitempty"`
+	OASSpec string `json:"oas_spec,omitempty"`
 }
 
 type commandCatalog struct {
@@ -220,6 +235,7 @@ func runCommands(cmd *cobra.Command, args []string) error {
 			info.APIEndpoints = meta.APIEndpoints
 			info.OASOperationID = meta.OASOperationID
 			info.OASOperationIDs = meta.OASOperationIDs
+			info.OASSpec = meta.OASSpec
 		}
 
 		catalog.Commands = append(catalog.Commands, info)

@@ -25,7 +25,7 @@ go test -race ./...
 ```
 coingecko-cli/
 ├── main.go                        # Entry point
-├── cmd/                           # Cobra commands (auth, status, price, markets, search, trending, history, top_gainers_losers, watch, tui, version)
+├── cmd/                           # Cobra commands (auth, status, price, markets, search, trending, history, top_gainers_losers, contract, watch, tui, version)
 ├── internal/
 │   ├── api/
 │   │   ├── client.go              # HTTP client, auth, error handling
@@ -103,6 +103,9 @@ coingecko-cli/
 | `cg history --from/--to --interval hourly` | `/coins/{id}/market_chart/range` (batched) | `coins-id-market-chart-range` |
 | `cg history --from/--to --ohlc` | `/coins/{id}/ohlc/range` (batched for large ranges) | `coins-id-ohlc-range` |
 | `cg top-gainers-losers` | `/coins/top_gainers_losers` | `coins-top-gainers-losers` |
+| `cg contract` (smart routing) | `/onchain/search/pools` + `/onchain/networks` → `/simple/token_price/{platform}` (CG first, onchain fallback) | `search-pools`, `simple-token-price`, `onchain-simple-price` |
+| `cg contract --platform` | `/simple/token_price/{platform}` | `simple-token-price` |
+| `cg contract --onchain` | `/onchain/simple/networks/{network}/token_price/{addresses}` | `onchain-simple-price` |
 | `cg watch` | `wss://stream.coingecko.com/v1` (WebSocket) | — |
 
 ## Distribution
@@ -136,3 +139,8 @@ coingecko-cli/
 - **Command test seams**: `cmd/client_factory.go` exposes injectable `newAPIClient`, `loadConfig`, and `newStreamer` vars so command integration tests can swap in httptest servers and test configs without touching real API or config files
 - **Pagination helper**: `FetchAllMarkets` in `internal/api/coins.go` handles multi-page fetching (250/page) with trim-to-total, used by both `cg markets` and `cg tui markets`
 - **TUI trending tier awareness**: demo gets 15 coins, paid gets 30 via `show_max=coins` API param
+- **Onchain currency conversion**: `--onchain` returns USD only. For `--vs` non-USD, the CLI fetches `/exchange_rates` and multiplies price/mcap/volume by `targetRate/usdRate`. 24h change % is unchanged. No caching — one extra API call per non-USD onchain request
+- **Platform/network discoverability**: `--platform` IDs come from `/asset_platforms` ([docs](https://docs.coingecko.com/reference/asset-platforms-list)), `--network` IDs from `/onchain/networks` ([docs](https://docs.coingecko.com/reference/networks-list)). These are different namespaces but auto-translated via the `coingecko_asset_platform_id` field in `/onchain/networks`
+- **Contract smart routing**: when `--platform`/`--network` are omitted, `resolveAddress()` fires `/onchain/search/pools` and `/onchain/networks` in parallel, extracts the network from the token relationship ID prefix (`{network}_{address}`), maps to CG platform via `coingecko_asset_platform_id`, then tries CG aggregated price first with onchain fallback. Address lookups are case-insensitive (normalized to lowercase)
+- **Onchain FDV fallback**: `OnchainSimpleTokenPrice` always sends `mcap_fdv_fallback=true` — the API returns FDV in `market_cap_usd` when market cap is unavailable
+- **Onchain reserve/liquidity**: `OnchainSimpleTokenPrice` always sends `include_total_reserve_in_usd=true` — the Reserve column appears only in onchain mode output (table/JSON/CSV)

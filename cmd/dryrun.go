@@ -94,10 +94,11 @@ func printDryRunFull(cfg *config.Config, cmdName, opKey, endpoint string, params
 
 	if meta, ok := commandMeta[cmdName]; ok {
 		out.OASSpec = meta.OASSpec
+		out.OASOperationID = meta.OASOperationID
 		if opKey != "" && meta.OASOperationIDs != nil {
-			out.OASOperationID = meta.OASOperationIDs[opKey]
-		} else {
-			out.OASOperationID = meta.OASOperationID
+			if v, ok := meta.OASOperationIDs[opKey]; ok {
+				out.OASOperationID = v
+			}
 		}
 	}
 
